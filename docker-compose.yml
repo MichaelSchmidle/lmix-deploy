@@ -1,0 +1,73 @@
+services:
+  # LMiX Application
+  app:
+    image: ghcr.io/michaelschmidle/lmix:latest
+    container_name: lmix
+    restart: unless-stopped
+    ports:
+      - "${LMIX_PORT:-3000}:3000"
+    environment:
+      - NUXT_PUBLIC_SUPABASE_URL=${NUXT_PUBLIC_SUPABASE_URL}
+      - NUXT_PUBLIC_SUPABASE_KEY=${NUXT_PUBLIC_SUPABASE_KEY}
+      # Supabase CLI configuration
+      - SUPABASE_DB_HOST=supabase-db
+      - SUPABASE_DB_PORT=5432
+      - SUPABASE_DB_NAME=postgres
+      - SUPABASE_DB_USER=postgres
+      - SUPABASE_DB_PASSWORD=${SUPABASE_POSTGRES_PASSWORD}
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+      supabase-api:
+        condition: service_started
+
+  # Supabase Stack
+  supabase-db:
+    image: supabase/postgres:15.1.0.117
+    container_name: supabase-db
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      - POSTGRES_PASSWORD=${SUPABASE_POSTGRES_PASSWORD}
+    volumes:
+      - lmix-db-data:/var/lib/postgresql/data
+
+  supabase-api:
+    image: supabase/gotrue:v2.82.4
+    container_name: supabase-auth
+    restart: unless-stopped
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    environment:
+      - GOTRUE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - GOTRUE_JWT_EXP=3600
+      - GOTRUE_DB_DRIVER=postgres
+      - GOTRUE_API_HOST=0.0.0.0
+      - GOTRUE_API_PORT=9999
+      - GOTRUE_DB_HOST=supabase-db
+      - GOTRUE_DB_PORT=5432
+      - GOTRUE_DB_NAME=postgres
+      - GOTRUE_DB_USER=postgres
+      - GOTRUE_DB_PASSWORD=${SUPABASE_POSTGRES_PASSWORD}
+    ports:
+      - "${SUPABASE_API_PORT:-54321}:9999"
+
+  supabase-studio:
+    image: supabase/studio:20230518-3d8c4c8
+    container_name: supabase-studio
+    restart: unless-stopped
+    ports:
+      - "${SUPABASE_STUDIO_PORT:-54323}:3000"
+    environment:
+      - STUDIO_PG_META_URL=http://supabase-api:8080
+      - SUPABASE_URL=http://supabase-api:9999
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+
+volumes:
+  lmix-db-data:
