@@ -5,7 +5,7 @@ services:
     container_name: lmix
     restart: unless-stopped
     ports:
-      - "${LMIX_PORT:-3000}:3000"
+      - "${LMIX_PORT:-5649}:3000"
     environment:
       - NUXT_PUBLIC_SUPABASE_URL=${NUXT_PUBLIC_SUPABASE_URL}
       - NUXT_PUBLIC_SUPABASE_KEY=${NUXT_PUBLIC_SUPABASE_KEY}
@@ -15,11 +15,18 @@ services:
       - SUPABASE_DB_NAME=postgres
       - SUPABASE_DB_USER=postgres
       - SUPABASE_DB_PASSWORD=${SUPABASE_POSTGRES_PASSWORD}
+      - LMIX_DOMAIN=${LMIX_DOMAIN:-lmix.ai}
+      - LMIX_API_DOMAIN=${LMIX_API_DOMAIN:-api.lmix.ai}
+      - LMIX_STUDIO_DOMAIN=${LMIX_STUDIO_DOMAIN:-studio.lmix.ai}
     depends_on:
       supabase-db:
         condition: service_healthy
       supabase-api:
         condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lmix.rule=Host(`${LMIX_DOMAIN:-lmix.ai}`)"
+      - "traefik.http.services.lmix.loadbalancer.server.port=${LMIX_PORT:-5649}"
 
   # Supabase Stack
   supabase-db:
@@ -55,19 +62,27 @@ services:
       - GOTRUE_DB_USER=postgres
       - GOTRUE_DB_PASSWORD=${SUPABASE_POSTGRES_PASSWORD}
     ports:
-      - "${SUPABASE_API_PORT:-54321}:9999"
+      - "${SUPABASE_API_PORT:-5642}:9999"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lmix-api.rule=Host(`${LMIX_API_DOMAIN:-api.lmix.ai}`)"
+      - "traefik.http.services.lmix-api.loadbalancer.server.port=9999"
 
   supabase-studio:
     image: supabase/studio:20230518-3d8c4c8
     container_name: supabase-studio
     restart: unless-stopped
     ports:
-      - "${SUPABASE_STUDIO_PORT:-54323}:3000"
+      - "${SUPABASE_STUDIO_PORT:-5643}:3000"
     environment:
       - STUDIO_PG_META_URL=http://supabase-api:8080
       - SUPABASE_URL=http://supabase-api:9999
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lmix-studio.rule=Host(`${LMIX_STUDIO_DOMAIN:-studio.lmix.ai}`)"
+      - "traefik.http.services.lmix-studio.loadbalancer.server.port=3000"
 
 volumes:
   lmix-db-data:

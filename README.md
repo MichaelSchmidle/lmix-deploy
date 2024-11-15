@@ -13,7 +13,7 @@ LMiX is not just another AI chat interface - it's a platform for orchestrating r
   git clone https://github.com/MichaelSchmidle/lmix-deploy
   cd lmix-deploy
   ```
-2. Copy and configure environment variables, for example:
+2. Copy and configure environment variables:
   ```bash
   cp default.env .env
   nano .env
@@ -22,9 +22,17 @@ LMiX is not just another AI chat interface - it's a platform for orchestrating r
   ```bash
   docker compose up -d
   ```
-4. Access the applications:
-- LMiX: http://localhost:3000 (configurable via LMIX_PORT environment variable)
-- Supabase Studio: http://localhost:54323 (configurable via SUPABASE_STUDIO_PORT environment variable)
+4. Access LMiX through your preferred method:
+  ```bash
+  # Privacy (no DNS)
+  open http://localhost:5649
+
+  # Privacy + flexibility (local DNS with reverse proxy)
+  open http://lmix.localhost # (or https, depending on your reverse proxy setup)
+
+  # Convenience (public DNS with reverse proxy)
+  open http://lmix.ai # (or https, depending on your reverse proxy setup)
+  ```
 
 ## Stack Components 🔧
 
@@ -33,8 +41,31 @@ LMiX is not just another AI chat interface - it's a platform for orchestrating r
   - PostgreSQL database
   - Authentication
   - Storage
+  - Studio
 
 ## Configuration ⚙️
+
+### Network Access
+
+Choose from three deployment modes based on your privacy requirements:
+
+1. **Direct Port Access** (Maximum Privacy)
+   - No DNS resolution needed
+   - Web UI: http://localhost:5649
+   - API: http://localhost:5642
+   - Studio: http://localhost:5643
+
+2. **Local Domains** (Privacy + Convenience)
+   - Requires local DNS entries
+   - Web UI: http://lmix.localhost
+   - API: http://lmix-api.localhost
+   - Studio: http://studio.lmix.localhost
+
+3. **Public Domains** (Maximum Convenience)
+   - Uses public DNS resolution
+   - Web UI: https://lmix.ai
+   - API: https://api.lmix.ai
+   - Studio: https://studio.lmix.ai
 
 ### Environment Variables
 
@@ -47,18 +78,16 @@ SUPABASE_JWT_SECRET=your-jwt-secret
 SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-key
 
-# Port Configuration (optional)
-LMIX_PORT=3000                  # LMiX web interface port
-SUPABASE_API_PORT=54321         # Supabase API port
-SUPABASE_STUDIO_PORT=54323      # Supabase Studio port
+# Network Configuration
+# Ports (memorable defaults: 5649=LMIX, 5642=LMIA, 5647=LMIS)
+LMIX_PORT=5649                      # Web UI port
+SUPABASE_API_PORT=5642              # API port
+SUPABASE_STUDIO_PORT=5647           # Studio port
+
+# Domains (for reverse proxy setups)
+LMIX_DOMAIN=lmix.localhost          # Web UI domain
+LMIX_API_DOMAIN=lmix-api.localhost  # API domain
 ```
-
-### Port Configuration
-
-All service ports can be configured through environment variables:
-- LMIX_PORT (default: 3000)
-- SUPABASE_API_PORT (default: 54321)
-- SUPABASE_STUDIO_PORT (default: 54323)
 
 ## Database Management 🗃️
 
@@ -79,7 +108,7 @@ To update your deployment:
 # Pull latest changes
 git pull
 
-# Restart the stack
+# Restart the stack with your chosen network configuration
 docker compose down
 docker compose pull
 docker compose up -d
@@ -90,9 +119,9 @@ The LMiX container will automatically handle any necessary database migrations d
 ## Data Persistence 💾
 
 Data is persisted in Docker volumes:
-- `lmix-db-data` (PostgreSQL database)
-- Survive container restarts
-- Require manual backup management
+- `lmix-db-data`: PostgreSQL database
+- Survives container restarts
+- Requires manual backup management
 
 ## Troubleshooting 🔍
 
@@ -101,9 +130,10 @@ View container logs:
 # All containers
 docker compose logs
 
-# Specific container
-docker compose logs lmix
-docker compose logs supabase-db
+# Specific containers
+docker compose logs lmix              # Web UI
+docker compose logs supabase-db       # Database
+docker compose logs supabase-api      # Auth/API
 ```
 
 ## License 📄

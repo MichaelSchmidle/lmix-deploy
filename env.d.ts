@@ -24,6 +24,11 @@ interface ImportMetaEnv {
 
   // Development Configuration
   readonly NODE_ENV?: 'development' | 'production' | 'test'
+
+  // LMiX Configuration
+  readonly LMIX_DOMAIN?: string
+  readonly LMIX_API_DOMAIN?: string
+  readonly LMIX_STUDIO_DOMAIN?: string
 }
 
 interface ImportMeta {
