@@ -4,7 +4,7 @@
 
 ## Overview 🌟
 
-LMiX is not just another AI chat interface - it's a platform for orchestrating rich interactions between multiple AI assistants, each with their own role, perspective, and knowledge state. Think of it as a theater where you're the director, but your actors can evolve beyond their initial roles and even break the fourth wall.
+LMiX is not just another AI chat interface - it's a platform for orchestrating rich productions between multiple AI assistants, each with their own role, perspective, and knowledge state. Think of it as a theater where you're the director, but your actors can evolve beyond their initial roles and even break the fourth wall.
 
 ## Quick Start 🏃
 
