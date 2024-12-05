@@ -1,88 +1,30 @@
+name: lmix-deploy
+
 services:
-  # LMiX Application
-  app:
-    image: ghcr.io/michaelschmidle/lmix:latest
+  lmix:
     container_name: lmix
-    restart: unless-stopped
+    image: ghcr.io/michaelschmidle/lmix:latest
+    environment:
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_KEY=${ANON_KEY}
+      - SUPABASE_DB_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}
+      - NODE_ENV=production
     ports:
       - "${LMIX_PORT:-5649}:3000"
-    environment:
-      - NUXT_PUBLIC_SUPABASE_URL=${NUXT_PUBLIC_SUPABASE_URL}
-      - NUXT_PUBLIC_SUPABASE_KEY=${NUXT_PUBLIC_SUPABASE_KEY}
-      # Supabase CLI configuration
-      - SUPABASE_DB_HOST=supabase-db
-      - SUPABASE_DB_PORT=5432
-      - SUPABASE_DB_NAME=postgres
-      - SUPABASE_DB_USER=postgres
-      - SUPABASE_DB_PASSWORD=${SUPABASE_POSTGRES_PASSWORD}
-      - LMIX_DOMAIN=${LMIX_DOMAIN:-lmix.ai}
-      - LMIX_API_DOMAIN=${LMIX_API_DOMAIN:-api.lmix.ai}
-      - LMIX_STUDIO_DOMAIN=${LMIX_STUDIO_DOMAIN:-studio.lmix.ai}
     depends_on:
-      supabase-db:
+      db:
         condition: service_healthy
-      supabase-api:
+      kong:
         condition: service_started
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.lmix.rule=Host(`${LMIX_DOMAIN:-lmix.ai}`)"
-      - "traefik.http.services.lmix.loadbalancer.server.port=${LMIX_PORT:-5649}"
-
-  # Supabase Stack
-  supabase-db:
-    image: supabase/postgres:15.1.0.117
-    container_name: supabase-db
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    environment:
-      - POSTGRES_PASSWORD=${SUPABASE_POSTGRES_PASSWORD}
-    volumes:
-      - lmix-db-data:/var/lib/postgresql/data
 
-  supabase-api:
-    image: supabase/gotrue:v2.82.4
-    container_name: supabase-auth
-    restart: unless-stopped
-    depends_on:
-      supabase-db:
-        condition: service_healthy
-    environment:
-      - GOTRUE_JWT_SECRET=${SUPABASE_JWT_SECRET}
-      - GOTRUE_JWT_EXP=3600
-      - GOTRUE_DB_DRIVER=postgres
-      - GOTRUE_API_HOST=0.0.0.0
-      - GOTRUE_API_PORT=9999
-      - GOTRUE_DB_HOST=supabase-db
-      - GOTRUE_DB_PORT=5432
-      - GOTRUE_DB_NAME=postgres
-      - GOTRUE_DB_USER=postgres
-      - GOTRUE_DB_PASSWORD=${SUPABASE_POSTGRES_PASSWORD}
+  # Override studio port to avoid conflicts
+  studio:
     ports:
-      - "${SUPABASE_API_PORT:-5642}:9999"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.lmix-api.rule=Host(`${LMIX_API_DOMAIN:-api.lmix.ai}`)"
-      - "traefik.http.services.lmix-api.loadbalancer.server.port=9999"
+      - "${STUDIO_PORT:-7883}:3000"
 
-  supabase-studio:
-    image: supabase/studio:20230518-3d8c4c8
-    container_name: supabase-studio
-    restart: unless-stopped
+  # Override kong port to avoid conflicts
+  kong:
     ports:
-      - "${SUPABASE_STUDIO_PORT:-5643}:3000"
-    environment:
-      - STUDIO_PG_META_URL=http://supabase-api:8080
-      - SUPABASE_URL=http://supabase-api:9999
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.lmix-studio.rule=Host(`${LMIX_STUDIO_DOMAIN:-studio.lmix.ai}`)"
-      - "traefik.http.services.lmix-studio.loadbalancer.server.port=3000"
-
-volumes:
-  lmix-db-data:
+      - "${KONG_HTTP_PORT:-5664}:8000/tcp"
+      - "${KONG_HTTPS_PORT:-56647}:8443/tcp"

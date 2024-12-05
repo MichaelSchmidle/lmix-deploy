@@ -9,134 +9,114 @@ LMiX is not just another AI chat interface - it's a platform for orchestrating r
 ## Quick Start 🏃
 
 1. Clone this repository:
-  ```bash
-  git clone https://github.com/MichaelSchmidle/lmix-deploy
-  cd lmix-deploy
-  ```
+   ```bash
+   git clone https://github.com/MichaelSchmidle/lmix-deploy
+   cd lmix-deploy
+   ```
+
 2. Copy and configure environment variables:
-  ```bash
-  cp default.env .env
-  nano .env
-  ```
+   ```bash
+   cp default.env .env
+   ```
+   Edit `.env` and configure at least these required variables:
+   - `POSTGRES_PASSWORD`: Database password
+   - `JWT_SECRET`: Secret for JWT token generation
+   - `ANON_KEY`: Public API key for client access
+   - `SERVICE_ROLE_KEY`: Admin API key for service access
+
 3. Start the stack:
-  ```bash
-  docker compose up -d
-  ```
-4. Access LMiX through your preferred method:
-  ```bash
-  # Privacy (no DNS)
-  open http://localhost:5649
+   ```bash
+   docker compose --env-file .env -f supabase/docker/docker-compose.yml -f docker-compose.yml up -d
 
-  # Privacy + flexibility (local DNS with reverse proxy)
-  open http://lmix.localhost # (or https, depending on your reverse proxy setup)
+   ```
 
-  # Convenience (public DNS with reverse proxy)
-  open http://lmix.ai # (or https, depending on your reverse proxy setup)
-  ```
+4. Create your user:
+   Open [Supabase Studio](http://localhost:7883/project/default/auth/users) and create your user via the corresponding action in the "Add user" dropdown. Make sure to check "Auto Confirm User."
 
-## Stack Components 🔧
-
-- LMiX Application: The main web interface
-- Supabase: Backend services including:
-  - PostgreSQL database
-  - Authentication
-  - Storage
-  - Studio
+5. Access LMiX:
+   Open the [LMiX web interface](http://localhost:5649), sign in with your newly created user, and follow the instructions to get started.
 
 ## Configuration ⚙️
 
-### Network Access
+### Network Configuration
 
-Choose from three deployment modes based on your privacy requirements:
+By default, the services use the following ports:
+- `5649`: LMiX Web Interface
+- `5664` and `56647`: Supabase API
+- `7678`: PostgreSQL Database
+- `7883`: Supabase Studio
 
-1. **Direct Port Access** (Maximum Privacy)
-   - No DNS resolution needed
-   - Web UI: http://localhost:5649
-   - API: http://localhost:5642
-   - Studio: http://localhost:5643
-
-2. **Local Domains** (Privacy + Convenience)
-   - Requires local DNS entries
-   - Web UI: http://lmix.localhost
-   - API: http://lmix-api.localhost
-   - Studio: http://studio.lmix.localhost
-
-3. **Public Domains** (Maximum Convenience)
-   - Uses public DNS resolution
-   - Web UI: https://lmix.ai
-   - API: https://api.lmix.ai
-   - Studio: https://studio.lmix.ai
+You can change these ports in your `.env` file if they conflict with other services.
 
 ### Environment Variables
 
-Copy `default.env` to `.env` and configure:
+The configuration is split into required and optional variables:
 
-```bash
-# Supabase Configuration (required)
-SUPABASE_POSTGRES_PASSWORD=your-secure-password
-SUPABASE_JWT_SECRET=your-jwt-secret
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-key
+#### Required Configuration
+These must be set in your `.env` file:
+- `POSTGRES_PASSWORD`: Database password
+- `JWT_SECRET`: Secret for JWT token generation
+- `ANON_KEY`: Public API key for client access
+- `SERVICE_ROLE_KEY`: Admin API key for service access
 
-# Network Configuration
-# Ports (memorable defaults: 5649=LMIX, 5642=LMIA, 5647=LMIS)
-LMIX_PORT=5649                      # Web UI port
-SUPABASE_API_PORT=5642              # API port
-SUPABASE_STUDIO_PORT=5647           # Studio port
+#### Optional Configuration
+The `default.env` file contains sensible defaults for all other settings. Override them in your `.env` file only if needed.
 
-# Domains (for reverse proxy setups)
-LMIX_DOMAIN=lmix.localhost          # Web UI domain
-LMIX_API_DOMAIN=lmix-api.localhost  # API domain
-```
+## Services 🛜
 
-## Database Management 🗃️
+The deployment includes these core services:
+- **LMiX**: The main application
+- **Supabase**: The database, authentication, storage, and more
 
-Database migrations are managed through the Supabase CLI, which is integrated into the LMiX application container. When the container starts:
-
-1. It automatically connects to the local Supabase instance
-2. Checks for pending migrations
-3. Applies any new migrations in order
-4. Reports migration status
-
-This ensures that your database schema is always in sync with the LMiX application version you're running.
-
-## Updates 🔄
+## Updates 🔁
 
 To update your deployment:
 
-```bash
-# Pull latest changes
-git pull
+1. Pull the latest changes:
+   ```bash
+   git pull
+   ```
 
-# Restart the stack with your chosen network configuration
-docker compose down
-docker compose pull
-docker compose up -d
-```
-
-The LMiX container will automatically handle any necessary database migrations during startup.
-
-## Data Persistence 💾
-
-Data is persisted in Docker volumes:
-- `lmix-db-data`: PostgreSQL database
-- Survives container restarts
-- Requires manual backup management
+2. Update the stack:
+   ```bash
+   docker compose pull
+   docker compose up -d
+   ```
 
 ## Troubleshooting 🔍
 
-View container logs:
+### Common Issues
+
+1. **Port Conflicts**:
+   If you see errors about ports being in use, adjust the port numbers in your `.env` file.
+
+2. **Database Connection Issues**:
+   - Ensure PostgreSQL is healthy: `docker compose ps db`
+   - Check logs: `docker compose logs db`
+
+3. **Authentication Problems**:
+   - Verify your JWT configuration in `.env`
+   - Check auth service logs: `docker compose logs auth`
+
+### Logs
+
+View service logs:
 ```bash
-# All containers
+# All services
 docker compose logs
 
-# Specific containers
-docker compose logs lmix              # Web UI
-docker compose logs supabase-db       # Database
-docker compose logs supabase-api      # Auth/API
+# Specific service
+docker compose logs [service]
+
+# Follow logs
+docker compose logs -f [service]
 ```
 
-## License 📄
+## Support 🛟
+
+For issues and feature requests, please use the [GitHub issue tracker](https://github.com/MichaelSchmidle/lmix/issues).
+
+## License 📜
 
 This deployment configuration is licensed under the [MIT License](LICENSE).
 
